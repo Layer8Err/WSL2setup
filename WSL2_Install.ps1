@@ -1,10 +1,12 @@
 # Install WSL
 # This script needs to be run as a priviledged user
 #dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+Write-Host("Installing/Verifying Windows Subsystem Linux...")
 $wslinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName Microsoft-Windows-Subsystem-Linux
 
 # Enable Virtual Machine Platform
 #dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+Write-Host("Installing/Verifying Virtual Machine Platform...")
 $vmpinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName VirtualMachinePlatform
 
 # At this point a reboot is probably necessary
@@ -19,9 +21,11 @@ function Test-RebootRequired {
 
 # Install Latest WSL2 Kernel
 function Update-Kernel () {
+    Write-Host("Downloading WSL2 Kernel Update...")
     $kernelURI = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
     $kernelUpdate = ((PWD).Path) + '\wsl_update_x64.msi'
     (New-Object System.Net.WebClient).DownloadFile($kernelURI, $kernelUpdate)
+    Write-Host("Installing WSL2 Kernel Update...")
     msiexec /i $kernelUpdate /qn
 }
 
@@ -43,6 +47,8 @@ if (Test-RebootRequired){
 } else {
     Update-Kernel
     Start-Sleep -Seconds 200
+    Write-Host("Installing Ubuntu 18.04 LTS......please follow prompts to complete install.")
     Install-Ubuntu
-    wsl --set-default-version 2 # Set WSL2 as the default
+    Write-Host("Setting WSL2 as the default...")
+    wsl --set-default-version 2
 }
