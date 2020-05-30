@@ -17,6 +17,14 @@ function Test-RebootRequired {
     }
 }
 
+# Install Latest WSL2 Kernel
+function Update-Kernel () {
+    $kernelURI = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
+    $kernelUpdate = ((PWD).Path) + '\wsl_update_x64.msi'
+    (New-Object System.Net.WebClient).DownloadFile($kernelURI, $kernelUpdate)
+    msiexec /i $kernelUpdate /qn
+}
+
 # Install Ubuntu 18.04 LTS
 function Install-Ubuntu () {
     $URL = 'https://aka.ms/wsl-ubuntu-1804'
@@ -33,6 +41,8 @@ if (Test-RebootRequired){
         shutdown /a
     }
 } else {
+    Update-Kernel
+    Start-Sleep -Seconds 200
     Install-Ubuntu
     wsl --set-default-version 2 # Set WSL2 as the default
 }
