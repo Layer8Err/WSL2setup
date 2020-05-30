@@ -52,6 +52,11 @@ if (Test-RebootRequired){
     Start-Sleep -Seconds 200
     Write-Host("Installing Ubuntu 18.04 LTS......please follow prompts to complete install.")
     Install-Ubuntu
+    Start-Sleep -Seconds 100
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
+    Write-Host("Setting Ubuntu-18.04 to use WSL2...")
+    Start-Sleep -Seconds 10
+    wsl --set-version Ubuntu-18.04 2
 }
+
