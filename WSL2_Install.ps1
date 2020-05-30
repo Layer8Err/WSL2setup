@@ -29,7 +29,7 @@ function Install-Ubuntu () {
 if (Test-RebootRequired){
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
-    if ($cancelReboot[0].ToLower() -eq 'y'){
+    if ($cancelReboot.Substring(0,1).ToLower() -eq 'y'){
         shutdown /a
     }
 } else {
