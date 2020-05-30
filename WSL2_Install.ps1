@@ -28,6 +28,10 @@ function Install-Ubuntu () {
 
 if (Test-RebootRequired){
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
+    $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
+    if ($cancelReboot[0].ToLower() -eq 'y'){
+        shutdown /a
+    }
 } else {
     Install-Ubuntu
     wsl --set-default-version 2 # Set WSL2 as the default
