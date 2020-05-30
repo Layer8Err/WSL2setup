@@ -27,6 +27,9 @@ function Update-Kernel () {
     (New-Object System.Net.WebClient).DownloadFile($kernelURI, $kernelUpdate)
     Write-Host("Installing WSL2 Kernel Update...")
     msiexec /i $kernelUpdate /qn
+    Start-Sleep -Seconds 200
+    Write-Host("Cleaning up Kernel Update installer...")
+    Remove-Item -Path $kernelUpdate
 }
 
 # Install Ubuntu 18.04 LTS
