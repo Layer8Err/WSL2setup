@@ -48,11 +48,12 @@ if (Test-RebootRequired){
         shutdown /a
     }
 } else {
-    Update-Kernel
+    #Update-Kernel
     Start-Sleep -Seconds 200
     Write-Host("Installing Ubuntu 18.04 LTS......please follow prompts to complete install.")
     Install-Ubuntu
-    Start-Sleep -Seconds 100
+    Write-Host("Please make sure that Ubuntu 18.04 LTS has been installed from the Windows Store")
+    $finishedInstall = Read-Host 'Press ENTER once Ubuntu 18.04 LTS has been installed'
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
     Write-Host("Setting Ubuntu-18.04 to use WSL2...")
