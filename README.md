@@ -14,3 +14,6 @@ You will have to run this snippet twice.
 * Once to install Windows pre-requisites
 * Once after the computer re-boots to install Ubuntu 18.04 LTS
 
+## Prerequisites
+
+You will need to have Windows 10 Build 2004 installed before you can use WSL2. If you do not already have Build 2004 or later installed, you can use [the Windows Update Assistant](https://go.microsoft.com/fwlink/?LinkID=799445) to upgrade to the latest 2004 build.
