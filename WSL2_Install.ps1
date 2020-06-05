@@ -36,12 +36,18 @@ function Update-Kernel () {
 
 # Install Ubuntu 18.04 LTS
 function Install-Ubuntu () {
-    $URL = 'https://aka.ms/wsl-ubuntu-1804'
-    $Filename = "$(Split-Path $URL -Leaf).appx"
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $URL -OutFile $Filename -UseBasicParsing
-    #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
-    Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu
+    if ((Get-AppxPackage).Name -contains 'CanonicalGroupLimited.Ubuntu18.04onWindows'){
+        Write-Host(" ...Found an existing Ubuntu 18.04 LTS install")
+    } else {
+        Write-Host("Installing Ubuntu 18.04 LTS......")
+        $URL = 'https://aka.ms/wsl-ubuntu-1804'
+        $Filename = "$(Split-Path $URL -Leaf).appx"
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $URL -OutFile $Filename -UseBasicParsing
+        #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
+        Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu 18.04
+        Start-Sleep -Seconds 120
+    }
 }
 
 if ($rebootRequired){
@@ -51,10 +57,9 @@ if ($rebootRequired){
         shutdown /a
     }
 } else {
-    Start-Sleep -Seconds 200
-    Write-Host("Installing Ubuntu 18.04 LTS......please follow prompts to complete install.")
     Install-Ubuntu
     Write-Host("Please make sure that Ubuntu 18.04 LTS has been installed from the Windows Store")
+    Write-Host("You will need to launch Ubuntu 18.04 and complete initial setup.")
     $finishedInstall = Read-Host 'Press ENTER once Ubuntu 18.04 LTS has been installed'
     Write-Host("Updating WSL2 kernel component...")
     Update-Kernel
