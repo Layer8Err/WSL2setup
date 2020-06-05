@@ -68,6 +68,7 @@ if ($rebootRequired){
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
     Install-Ubuntu
+    Start-Process ubuntu1804.exe
     Write-Host("Please make sure that Ubuntu 18.04 LTS has been installed from the Windows Store")
     Write-Host("You will need to launch Ubuntu 18.04 and complete initial setup.")
     $finishedInstall = Read-Host 'Press ENTER once Ubuntu 18.04 LTS has been installed'
