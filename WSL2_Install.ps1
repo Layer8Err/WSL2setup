@@ -40,7 +40,8 @@ function Install-Ubuntu () {
     $Filename = "$(Split-Path $URL -Leaf).appx"
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri $URL -OutFile $Filename -UseBasicParsing
-    Invoke-Item $FileName
+    #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
+    Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu
 }
 
 if ($rebootRequired){
