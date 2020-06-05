@@ -4,15 +4,15 @@ Quickly get up and running with WSL2 on Windows 10 Build 2004.
 
 ## Quickstart
 
-To quickly get up and running with WSL2, you can run the following one-liner:
+To quickly get up and running with WSL2, open a new PowerShell window as "Admin" and run the following one-liner:
 
 ```posh
 iex ((New-Object System.Net.WebClient).DownloadString('https://git.io/JfKrM'))
 ```
 
-You will have to run this snippet twice.
+You will have to run this one-liner twice.
 * Once to install Windows pre-requisites
-* Once after the computer re-boots to install Ubuntu 18.04 LTS
+* Once after the computer re-boots to update the WSL2 kernel and install Ubuntu 18.04 LTS
 
 ## Prerequisites
 
