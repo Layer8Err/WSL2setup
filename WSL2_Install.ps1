@@ -1,23 +1,25 @@
 # Install WSL
 # This script needs to be run as a priviledged user
-#dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
 Write-Host("Installing/Verifying Windows Subsystem Linux...")
-$wslinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName Microsoft-Windows-Subsystem-Linux
-
-# Enable Virtual Machine Platform
-#dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-Write-Host("Installing/Verifying Virtual Machine Platform...")
-$vmpinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName VirtualMachinePlatform
-
-# At this point a reboot is probably necessary
-
-function Test-RebootRequired {
-    if (($wslinst.RestartNeeded -eq $true) -or ($vmpinst.RestartNeeded -eq $true)) {
-        return $true
-    } else {
-        return $false
+$rebootRequired = $false
+if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux).State -ne 'Enabled'){
+    $wslinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName Microsoft-Windows-Subsystem-Linux
+    if ($wslinst.Restartneeded -eq $true){
+        $rebootRequired = $true
     }
 }
+
+# Enable Virtual Machine Platform
+Write-Host("Installing/Verifying Virtual Machine Platform...")
+if ((Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform).State -ne 'Enabled'){
+    $vmpinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName VirtualMachinePlatform
+    if ($vmpinst.RestartNeeded -eq $true){
+        $rebootRequired = $true
+    }
+}
+
+# At this point a reboot is probably necessary
 
 # Install Latest WSL2 Kernel
 function Update-Kernel () {
@@ -41,7 +43,7 @@ function Install-Ubuntu () {
     Invoke-Item $FileName
 }
 
-if (Test-RebootRequired){
+if ($rebootRequired){
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
     if ($cancelReboot.Substring(0,1).ToLower() -eq 'y'){
