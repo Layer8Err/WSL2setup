@@ -4,7 +4,7 @@
 Write-Host("Checking for Windows Subsystem Linux...")
 $rebootRequired = $false
 if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux).State -ne 'Enabled'){
-    Write-Host(" ...Installing Windows Subsystem Linux."
+    Write-Host(" ...Installing Windows Subsystem Linux.")
     $wslinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName Microsoft-Windows-Subsystem-Linux
     if ($wslinst.Restartneeded -eq $true){
         $rebootRequired = $true
