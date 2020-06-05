@@ -32,7 +32,7 @@ function Update-Kernel () {
     (New-Object System.Net.WebClient).DownloadFile($kernelURI, $kernelUpdate)
     Write-Host(" ...Installing WSL2 Kernel Update.")
     msiexec /i $kernelUpdate /qn
-    Start-Sleep -Seconds 120
+    Start-Sleep -Seconds 30
     Write-Host(" ...Cleaning up Kernel Update installer.")
     Remove-Item -Path $kernelUpdate
 }
@@ -51,7 +51,7 @@ function Install-Ubuntu () {
         #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
         Write-Host(" ...Beginning Ubuntu 18.04 LTS install.")
         Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu 18.04
-        Start-Sleep -Seconds 120
+        Start-Sleep -Seconds 20
     }
 }
 
