@@ -1,22 +1,27 @@
 # Install WSL
 # This script needs to be run as a priviledged user
 
-Write-Host("Installing/Verifying Windows Subsystem Linux...")
+Write-Host("Checking for Windows Subsystem Linux...")
 $rebootRequired = $false
 if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux).State -ne 'Enabled'){
+    Write-Host(" ...Installing Windows Subsystem Linux."
     $wslinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName Microsoft-Windows-Subsystem-Linux
     if ($wslinst.Restartneeded -eq $true){
         $rebootRequired = $true
     }
+} else {
+    Write-Host(" ...Windows Subsystem Linux already installed.")
 }
 
-# Enable Virtual Machine Platform
-Write-Host("Installing/Verifying Virtual Machine Platform...")
+Write-Host("Checking for Virtual Machine Platform...")
 if ((Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform).State -ne 'Enabled'){
+    Write-Host(" ...Installing Virtual Machine Platform.")
     $vmpinst = Enable-WindowsOptionalFeature -Online  -NoRestart -FeatureName VirtualMachinePlatform
     if ($vmpinst.RestartNeeded -eq $true){
         $rebootRequired = $true
     }
+} else {
+    Write-Host(" ...Virtual Machine Platform already installed.")
 }
 
 # At this point a reboot is probably necessary
@@ -53,8 +58,10 @@ function Install-Ubuntu () {
 if ($rebootRequired){
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
-    if ($cancelReboot.Substring(0,1).ToLower() -eq 'y'){
-        shutdown /a
+    if ($cancelReboot.Length -ne 0){
+        if ($cancelReboot.Substring(0,1).ToLower() -eq 'y'){
+            shutdown /a
+        }
     }
 } else {
     Install-Ubuntu
