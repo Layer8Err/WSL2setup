@@ -56,6 +56,8 @@ function Install-Ubuntu () {
 }
 
 if ($rebootRequired){
+    Write-Host("Updating WSL2 kernel component...")
+    Update-Kernel
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
     if ($cancelReboot.Length -ne 0){
@@ -68,8 +70,6 @@ if ($rebootRequired){
     Write-Host("Please make sure that Ubuntu 18.04 LTS has been installed from the Windows Store")
     Write-Host("You will need to launch Ubuntu 18.04 and complete initial setup.")
     $finishedInstall = Read-Host 'Press ENTER once Ubuntu 18.04 LTS has been installed'
-    Write-Host("Updating WSL2 kernel component...")
-    Update-Kernel
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
     Write-Host("Setting Ubuntu-18.04 to use WSL2...")
