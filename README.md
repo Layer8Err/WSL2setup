@@ -1,7 +1,7 @@
 # WSL2setup
 
-Quickly get up and running with WSL2 on Windows 10 Build 2004.
-Install various Linux distros.
+This script allows you to quickly get up and running with WSL2 on Windows 10 Build 2004.
+This script allows allows for easy install of various Linux distros.
 
 ## Quickstart
 
@@ -23,6 +23,7 @@ You will need to have Windows 10 Build 2004 installed before you can use WSL2. I
 
 This script is tested and working on bare-metal as well as a Hyper-V VM with nested virtualization turned on.
 
+Make sure that Dynamic Memory is _disabled_.
 To turn on nested virtualization on Windows Server 2016+ or Windows 10 you can use the following command:
 ```posh
 (Get-VM).Name # Get a list of VM names
