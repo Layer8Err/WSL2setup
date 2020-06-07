@@ -28,13 +28,77 @@ function Update-Kernel () {
     Write-Host("Updating WSL2 kernel component...")
     Write-Host(" ...Downloading WSL2 Kernel Update.")
     $kernelURI = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
-    $kernelUpdate = ((PWD).Path) + '\wsl_update_x64.msi'
+    $kernelUpdate = ((Get-Location).Path) + '\wsl_update_x64.msi'
     (New-Object System.Net.WebClient).DownloadFile($kernelURI, $kernelUpdate)
     Write-Host(" ...Installing WSL2 Kernel Update.")
     msiexec /i $kernelUpdate /qn
     Start-Sleep -Seconds 5
     Write-Host(" ...Cleaning up Kernel Update installer.")
     Remove-Item -Path $kernelUpdate
+}
+ 
+function Select-Distro () {
+    # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
+    $distrolist = ([PSCustomObject]@{
+            'Name' = 'Ubuntu 18.04'
+            'URI' = 'https://aka.ms/wsl-ubuntu-1804'
+            'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
+            'winpe' = 'ubuntu1804.exe'
+        }, [PSCustomObject]@{
+            'Name' = 'Ubuntu 16.04'
+            'URI' = 'https://aka.ms/wsl-ubuntu-1604'
+            'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
+            'winpe' = 'ubuntu1604.exe'
+        }, [PSCustomObject]@{
+            'Name' = 'Debian'
+            'URI' = 'https://aka.ms/wsl-debian-gnulinux'
+            'AppxName' = 'TheDebianProject.DebianGNULinux'
+            'winpe' = 'debian.exe'
+        }, [PSCustomObject]@{
+            'Name' = 'Kali'
+            'URI' = 'https://aka.ms/wsl-kali-linux-new'
+            'AppxName' = 'KaliLinux'
+            'winpe' = 'kali.exe'
+        }, [PSCustomObject]@{
+            'Name' = 'OpenSUSE Leap 42'
+            'URI' = 'https://aka.ms/wsl-opensuse-42'
+            'AppxName' = 'openSUSELeap42'
+            'winpe' = 'openSUSE-42.exe'
+        }, [PSCustomObject]@{
+            'Name' = 'SUSE Linux Enterprise Server 12'
+            'URI' = 'https://aka.ms/wsl-sles-12'
+            'AppxName' = 'SUSELinuxEnterpriseServer12'
+            'winpe' = 'SLES-12.exe'
+        }
+    )
+    Write-Host("Choose your Distro")
+    Write-Host("Ubuntu 18.04 is currently recommended for Docker on WSL2")
+    For ($i = 0; $i -le ($distrolist.Length - 1); $i++){
+        Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i])
+    }
+    $distroChoice = Read-Host '>'
+    $choiceNum = 0
+    if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')){
+        if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)){
+            $choiceNum = ($distroChoice - 1)
+        }
+    }
+    $choice = $distrolist[$choiceNum]
+    return $choice
+}
+
+function Install-Distro ($distro) {
+    if ((Get-AppxPackage).Name -Contains $distro.AppxName){
+        Write-Host("...Found an existing " + $distro.Name + " install")
+    } else {
+        $Filename = "$(Split-Path $distro.URI -Leaf).appx"
+        $ProgressPreference = 'SilentlyContinue'
+        Write-Host(" ...Downloading " + $distro.Name + ".")
+        Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
+        Write-Host(" ...Beginning " + $distro.Name + " install.")
+        Add-AppxPackage -Path $Filename
+        Start-Sleep -Seconds 5
+    }
 }
 
 # Install Ubuntu 18.04 LTS
@@ -67,13 +131,7 @@ if ($rebootRequired){
     Update-Kernel
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
-    Install-Ubuntu
-    Start-Process ubuntu1804.exe
-    Write-Host("Please make sure that Ubuntu 18.04 LTS has been installed from the Windows Store")
-    Write-Host("You will need to launch Ubuntu 18.04 and complete initial setup.")
-    #$finishedInstall = Read-Host 'Press ENTER once Ubuntu 18.04 LTS has been installed'
-    #Write-Host("Setting Ubuntu-18.04 to use WSL2...")
-    #Start-Sleep -Seconds 10
-    #wsl --set-version Ubuntu-18.04 2
+    $distro = Select-Distro
+    Install-Distro($distro)
+    Start-Process $distro.winpe
 }
-
