@@ -84,49 +84,68 @@ function Kernel-Updated () {
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    $distrolist = ([PSCustomObject]@{
+    $distrolist = (
+        [PSCustomObject]@{
             'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
             'winpe' = 'ubuntu1804.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Ubuntu 16.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1604'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
             'winpe' = 'ubuntu1604.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Debian'
             'URI' = 'https://aka.ms/wsl-debian-gnulinux'
             'AppxName' = 'TheDebianProject.DebianGNULinux'
             'winpe' = 'debian.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Kali'
             'URI' = 'https://aka.ms/wsl-kali-linux-new'
             'AppxName' = 'KaliLinux'
             'winpe' = 'kali.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'OpenSUSE Leap 42'
             'URI' = 'https://aka.ms/wsl-opensuse-42'
             'AppxName' = 'openSUSELeap42'
             'winpe' = 'openSUSE-42.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'SUSE Linux Enterprise Server 12'
             'URI' = 'https://aka.ms/wsl-sles-12'
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
+            'installed' = $false
         }
     )
+    $pkgs = (Get-AppxPackage).Name
+    $distrolist | ForEach-Object {
+        function Check-Distro ($distro) {
+            if ($pkgs -Contains $distro.AppxPackage) {
+                $distro.installed = $true
+            }
+        }
+    }
     Write-Host("+------------------------------------------------+")
     Write-Host("| Choose your Distro                             |")
     Write-Host("| Ubuntu 18.04 is recommended for Docker on WSL2 |")
     Write-Host("+------------------------------------------------+")
-    For ($i = 0; $i -le ($distrolist.Length - 1); $i++){
-        Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i])
+    For ($i = 0; $i -le ($distrolist.Length - 1); $i++) {
+        $installedTxt = ""
+        if ($distrolist.installed) {
+            $installedTxt = "(Installed)"
+        }
+        Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i] + " " + $installedTxt)
     }
     $distroChoice = Read-Host '>'
     $choiceNum = 0
-    if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')){
-        if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)){
+    if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')) {
+        if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)) {
             $choiceNum = ($distroChoice - 1)
         }
     }
@@ -135,7 +154,7 @@ function Select-Distro () {
 }
 
 function Install-Distro ($distro) {
-    if ((Get-AppxPackage).Name -Contains $distro.AppxName){
+    if ((Get-AppxPackage).Name -Contains $distro.AppxName) {
         Write-Host("...Found an existing " + $distro.Name + " install")
     } else {
         $Filename = "$(Split-Path $distro.URI -Leaf).appx"
@@ -148,7 +167,7 @@ function Install-Distro ($distro) {
     }
 }
 
-if ($rebootRequired){
+if ($rebootRequired) {
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
     if ($cancelReboot.Length -ne 0){
@@ -157,7 +176,7 @@ if ($rebootRequired){
         }
     }
 } else {
-    if (!(Kernel-Updated)){
+    if (!(Kernel-Updated)) {
         Write-Host(" ...WSL kernel update not installed.")
         Update-Kernel
     } else {
