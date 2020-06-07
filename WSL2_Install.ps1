@@ -125,12 +125,9 @@ function Select-Distro () {
     )
     $pkgs = (Get-AppxPackage).Name
     $distrolist | ForEach-Object {
-        function Check-Distro ($distro) {
-            if ($pkgs -Contains $distro.AppxPackage) {
-                $distro.installed = $true
-            }
+        if ($pkgs -Contains $_.AppxPackage) {
+            $_.installed = $true
         }
-        Check-Distro($_)
     }
     Write-Host("+------------------------------------------------+")
     Write-Host("| Choose your Distro                             |")
