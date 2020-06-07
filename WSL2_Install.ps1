@@ -39,6 +39,7 @@ function Update-Kernel () {
 
 # Check for Kernel Update Package
 function Kernel-Updated () {
+    Write-Host("Checking for Windows Subsystem for Linux Update...")
     $uninstall64 = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, Publisher, DisplayVersion, InstallDate
     function progstats {
         [CmdletBinding()] Param(
@@ -116,8 +117,10 @@ function Select-Distro () {
             'winpe' = 'SLES-12.exe'
         }
     )
-    Write-Host("Choose your Distro")
-    Write-Host("Ubuntu 18.04 is currently recommended for Docker on WSL2")
+    Write-Host("+------------------------------------------------+")
+    Write-Host("| Choose your Distro                             |")
+    Write-Host("| Ubuntu 18.04 is recommended for Docker on WSL2 |")
+    Write-Host("+------------------------------------------------+")
     For ($i = 0; $i -le ($distrolist.Length - 1); $i++){
         Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i])
     }
@@ -156,7 +159,10 @@ if ($rebootRequired){
     }
 } else {
     if (!(Kernel-Updated)){
+        Write-Host(" ...Installing WSL kernel update.")
         Update-Kernel
+    } else {
+        Write-Host(" ...WSL update already installed.")
     }
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
