@@ -1,6 +1,7 @@
 # WSL2setup
 
 Quickly get up and running with WSL2 on Windows 10 Build 2004.
+Install various Linux distros.
 
 ## Quickstart
 
