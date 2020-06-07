@@ -153,7 +153,7 @@ function Select-Distro () {
 
 function Install-Distro ($distro) {
     if ((Get-AppxPackage).Name -Contains $distro.AppxName) {
-        Write-Host("...Found an existing " + $distro.Name + " install")
+        Write-Host(" ...Found an existing " + $distro.Name + " install")
     } else {
         $Filename = "$(Split-Path $distro.URI -Leaf).appx"
         $ProgressPreference = 'SilentlyContinue'
