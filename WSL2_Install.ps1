@@ -130,6 +130,7 @@ function Select-Distro () {
                 $distro.installed = $true
             }
         }
+        Check-Distro($_)
     }
     Write-Host("+------------------------------------------------+")
     Write-Host("| Choose your Distro                             |")
@@ -137,7 +138,7 @@ function Select-Distro () {
     Write-Host("+------------------------------------------------+")
     For ($i = 0; $i -le ($distrolist.Length - 1); $i++) {
         $installedTxt = ""
-        if ($distrolist.installed) {
+        if (($distrolist.installed)[$i]) {
             $installedTxt = "(Installed)"
         }
         Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i] + " " + $installedTxt)
