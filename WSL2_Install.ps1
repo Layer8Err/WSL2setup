@@ -25,7 +25,6 @@ if ((Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform).Sta
 }
 
 function Update-Kernel () {
-    Write-Host("Updating WSL2 kernel component...")
     Write-Host(" ...Downloading WSL2 Kernel Update.")
     $kernelURI = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
     $kernelUpdate = ((Get-Location).Path) + '\wsl_update_x64.msi'
@@ -159,7 +158,7 @@ if ($rebootRequired){
     }
 } else {
     if (!(Kernel-Updated)){
-        Write-Host(" ...Installing WSL kernel update.")
+        Write-Host(" ...WSL kernel update not installed.")
         Update-Kernel
     } else {
         Write-Host(" ...WSL update already installed.")
