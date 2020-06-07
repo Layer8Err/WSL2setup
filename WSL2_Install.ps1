@@ -36,6 +36,51 @@ function Update-Kernel () {
     Write-Host(" ...Cleaning up Kernel Update installer.")
     Remove-Item -Path $kernelUpdate
 }
+
+# Check for Kernel Update Package
+function Kernel-Updated () {
+    $uninstall64 = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, Publisher, DisplayVersion, InstallDate
+    function progstats {
+        [CmdletBinding()] Param(
+        [Parameter(Position = 0, Mandatory = $True)]
+        [PSObject]$uninstallData,
+        [Parameter(Position = 1, Mandatory = $True)]
+        [String]$architecture
+        )
+        $allprogs = @()
+        $uninstallData | ForEach-Object {
+            if ($installDate) { Clear-Variable -Name installDate }
+            if (($_.InstallDate).Length -gt 1){
+                [String]$installDate = ($_.InstallDate).Replace(' ','')
+            } else { $installDate = "" }
+            if ($installDate.Length -eq 8) {
+                $installDate = $installDate.Substring(0,4) + "/" + $installDate.Substring(4,2) + "/" + $installDate.Substring(6,2)
+            } else {
+                $installDate = ""
+            }
+            $properties = @{
+                    'DisplayName'=$_.DisplayName;
+                    'Publisher'=$_.Publisher;
+                    'Version'=$_.DisplayVersion;
+                    'InstallDate'=$installDate;
+                    'Architecture'=$architecture}
+            if (($_.DisplayName).Length -gt 1) {
+                $progstats = New-Object PSObject -Property $properties
+                $allprogs += $progstats
+            }
+        }
+        Return $allprogs
+    }
+    $allProgs = @()
+    if ($uninstall64) { $allProgs = progstats -uninstallData $uninstall64 -architecture "x64" }
+    $updatePresent = $false
+    if ($allProgs.Length -gt 0){
+        if ($allProgs.DisplayName -contains 'Windows Subsystem for Linux Update'){
+            $updatePresent = $true
+        }
+    }
+    return $updatePresent
+}
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
@@ -101,24 +146,6 @@ function Install-Distro ($distro) {
     }
 }
 
-# Install Ubuntu 18.04 LTS
-function Install-Ubuntu () {
-    if ((Get-AppxPackage).Name -contains 'CanonicalGroupLimited.Ubuntu18.04onWindows'){
-        Write-Host(" ...Found an existing Ubuntu 18.04 LTS install")
-    } else {
-        Write-Host("Installing Ubuntu 18.04 LTS...")
-        $URL = 'https://aka.ms/wsl-ubuntu-1804'
-        $Filename = "$(Split-Path $URL -Leaf).appx"
-        $ProgressPreference = 'SilentlyContinue'
-        Write-Host(" ...Downloading Ubuntu 18.04 LTS.")
-        Invoke-WebRequest -Uri $URL -OutFile $Filename -UseBasicParsing
-        #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
-        Write-Host(" ...Beginning Ubuntu 18.04 LTS install.")
-        Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu 18.04
-        Start-Sleep -Seconds 5
-    }
-}
-
 if ($rebootRequired){
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
@@ -128,7 +155,9 @@ if ($rebootRequired){
         }
     }
 } else {
-    Update-Kernel
+    if (!(Kernel-Updated)){
+        Update-Kernel
+    }
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
     $distro = Select-Distro
