@@ -125,7 +125,7 @@ function Select-Distro () {
     )
     $pkgs = (Get-AppxPackage).Name
     $distrolist | ForEach-Object {
-        if ($pkgs -Contains $_.AppxPackage) {
+        if ($pkgs -contains $_.AppxName) {
             $_.installed = $true
         }
     }
