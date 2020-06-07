@@ -25,7 +25,6 @@ if ((Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform).Sta
 }
 
 function Update-Kernel () {
-    Write-Host("Updating WSL2 kernel component...")
     Write-Host(" ...Downloading WSL2 Kernel Update.")
     $kernelURI = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
     $kernelUpdate = ((Get-Location).Path) + '\wsl_update_x64.msi'
@@ -36,50 +35,80 @@ function Update-Kernel () {
     Write-Host(" ...Cleaning up Kernel Update installer.")
     Remove-Item -Path $kernelUpdate
 }
+
+# Check for Kernel Update Package
+function Kernel-Updated () {
+    Write-Host("Checking for Windows Subsystem for Linux Update...")
+    $uninstall64 = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, Publisher, DisplayVersion, InstallDate
+    if ($uninstall64.DisplayName -contains 'Windows Subsystem for Linux Update') {
+        return $true 
+    } else {
+        return $false
+    }
+}
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    $distrolist = ([PSCustomObject]@{
+    $distrolist = (
+        [PSCustomObject]@{
             'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
             'winpe' = 'ubuntu1804.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Ubuntu 16.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1604'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
             'winpe' = 'ubuntu1604.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Debian'
             'URI' = 'https://aka.ms/wsl-debian-gnulinux'
             'AppxName' = 'TheDebianProject.DebianGNULinux'
             'winpe' = 'debian.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'Kali'
             'URI' = 'https://aka.ms/wsl-kali-linux-new'
             'AppxName' = 'KaliLinux'
             'winpe' = 'kali.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'OpenSUSE Leap 42'
             'URI' = 'https://aka.ms/wsl-opensuse-42'
             'AppxName' = 'openSUSELeap42'
             'winpe' = 'openSUSE-42.exe'
+            'installed' = $false
         }, [PSCustomObject]@{
             'Name' = 'SUSE Linux Enterprise Server 12'
             'URI' = 'https://aka.ms/wsl-sles-12'
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
+            'installed' = $false
         }
     )
-    Write-Host("Choose your Distro")
-    Write-Host("Ubuntu 18.04 is currently recommended for Docker on WSL2")
-    For ($i = 0; $i -le ($distrolist.Length - 1); $i++){
-        Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i])
+    $pkgs = (Get-AppxPackage).Name
+    $distrolist | ForEach-Object {
+        if ($pkgs -contains $_.AppxName) {
+            $_.installed = $true
+        }
+    }
+    Write-Host("+------------------------------------------------+")
+    Write-Host("| Choose your Distro                             |")
+    Write-Host("| Ubuntu 18.04 is recommended for Docker on WSL2 |")
+    Write-Host("+------------------------------------------------+")
+    For ($i = 0; $i -le ($distrolist.Length - 1); $i++) {
+        $installedTxt = ""
+        if (($distrolist.installed)[$i]) {
+            $installedTxt = "(Installed)"
+        }
+        Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i] + " " + $installedTxt)
     }
     $distroChoice = Read-Host '>'
     $choiceNum = 0
-    if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')){
-        if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)){
+    if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')) {
+        if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)) {
             $choiceNum = ($distroChoice - 1)
         }
     }
@@ -88,8 +117,8 @@ function Select-Distro () {
 }
 
 function Install-Distro ($distro) {
-    if ((Get-AppxPackage).Name -Contains $distro.AppxName){
-        Write-Host("...Found an existing " + $distro.Name + " install")
+    if ((Get-AppxPackage).Name -Contains $distro.AppxName) {
+        Write-Host(" ...Found an existing " + $distro.Name + " install")
     } else {
         $Filename = "$(Split-Path $distro.URI -Leaf).appx"
         $ProgressPreference = 'SilentlyContinue'
@@ -101,25 +130,7 @@ function Install-Distro ($distro) {
     }
 }
 
-# Install Ubuntu 18.04 LTS
-function Install-Ubuntu () {
-    if ((Get-AppxPackage).Name -contains 'CanonicalGroupLimited.Ubuntu18.04onWindows'){
-        Write-Host(" ...Found an existing Ubuntu 18.04 LTS install")
-    } else {
-        Write-Host("Installing Ubuntu 18.04 LTS...")
-        $URL = 'https://aka.ms/wsl-ubuntu-1804'
-        $Filename = "$(Split-Path $URL -Leaf).appx"
-        $ProgressPreference = 'SilentlyContinue'
-        Write-Host(" ...Downloading Ubuntu 18.04 LTS.")
-        Invoke-WebRequest -Uri $URL -OutFile $Filename -UseBasicParsing
-        #Invoke-Item $FileName # Attempt to open Windows Store for Ubuntu install
-        Write-Host(" ...Beginning Ubuntu 18.04 LTS install.")
-        Add-AppxPackage -Path $FileName # Attempt to silently install Ubuntu 18.04
-        Start-Sleep -Seconds 5
-    }
-}
-
-if ($rebootRequired){
+if ($rebootRequired) {
     shutdown /t 120 /r /c "Reboot required to finish installing WSL2"
     $cancelReboot = Read-Host 'Cancel reboot for now (you still need to reboot and rerun to finish installing WSL2) [y/N]'
     if ($cancelReboot.Length -ne 0){
@@ -128,7 +139,12 @@ if ($rebootRequired){
         }
     }
 } else {
-    Update-Kernel
+    if (!(Kernel-Updated)) {
+        Write-Host(" ...WSL kernel update not installed.")
+        Update-Kernel
+    } else {
+        Write-Host(" ...WSL update already installed.")
+    }
     Write-Host("Setting WSL2 as the default...")
     wsl --set-default-version 2
     $distro = Select-Distro
