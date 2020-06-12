@@ -62,7 +62,7 @@ function Check-Existance ($distro) {
     if (($distro.AppxName).Length -eq 0){ $wslImport = $true }
     $installed = $false
     if ( $wslImport -eq $false ){
-        if ($pkgs -contains $distro.AppxName) {
+        if ($pkgs -match $distro.AppxName) {
             $installed = $true
         }
     } else {
