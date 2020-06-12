@@ -36,7 +36,7 @@ function Update-Kernel () {
     Remove-Item -Path $kernelUpdate
 }
 
-function Kernel-Updated () {
+function Get-Kernel-Updated () {
     # Check for Kernel Update Package
     Write-Host("Checking for Windows Subsystem for Linux Update...")
     $uninstall64 = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, Publisher, DisplayVersion, InstallDate
@@ -55,7 +55,7 @@ function Get-WSLlist {
     $wslinstalls = $wslinstalls | Where-Object { $_ -ne 'Windows Subsystem for Linux Distributions:' }
     return $wslinstalls
 }
-function Check-Existance ($distro) {
+function Get-WSLExistance ($distro) {
     # Check for the existence of a distro
     # return Installed as Bool
     $wslImport = $false
@@ -143,7 +143,7 @@ function Select-Distro () {
         #     'installed' = $false
         # }
     )
-    $distrolist | ForEach-Object { $_.installed = Check-Existance($_) }
+    $distrolist | ForEach-Object { $_.installed = Get-WSLExistance($_) }
     Write-Host("+------------------------------------------------+")
     Write-Host("| Choose your Distro                             |")
     Write-Host("| Ubuntu 18.04 is recommended for Docker on WSL2 |")
@@ -167,7 +167,7 @@ function Select-Distro () {
 }
 
 function Install-Distro ($distro) {
-    function WSL-Import ($distro) {
+    function Import-WSL ($distro) {
         $distroinstall = "$env:LOCALAPPDATA\lxss"
         $wslname = $($distro.Name).Replace(" ", "-")
         $Filename = $wslname + ".rootfs.tar.gz"
@@ -175,7 +175,7 @@ function Install-Distro ($distro) {
         Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
         wsl.exe --import $wslname $distroinstall $Filename
     }
-    function WSL-AppxAdd ($distro) {
+    function Add-WSLAppx ($distro) {
         # ToDo: Check if sideloading is required
         $Filename = "$($distro.AppxName).appx"
         $ProgressPreference = 'SilentlyContinue'
@@ -185,13 +185,13 @@ function Install-Distro ($distro) {
         Add-AppxPackage -Path $Filename
         Start-Sleep -Seconds 5
     }
-    if (Check-Existance($distro)) {
+    if (Get-WSLExistance($distro)) {
         Write-Host(" ...Found an existing " + $distro.Name + " install")
     } else {
         if ($($distro.AppxName).Length -gt 1){
-            WSL-AppxAdd($distro)
+            Add-WSLAppx($distro)
         } else {
-            WSL-Import($distro)
+            Import-WSL($distro)
         }
     }
 }
@@ -205,7 +205,7 @@ if ($rebootRequired) {
         }
     }
 } else {
-    if (!(Kernel-Updated)) {
+    if (!(Get-Kernel-Updated)) {
         Write-Host(" ...WSL kernel update not installed.")
         Update-Kernel
     } else {
