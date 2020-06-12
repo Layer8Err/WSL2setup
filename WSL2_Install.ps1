@@ -136,7 +136,7 @@ function Select-Distro () {
         #     'sideloadreqd' = $true # Sideloading not supported by this script... yet
         # },
         # [PSCustomObject]@{
-        #     'Name' = 'Ubuntu 20.04 - wsl import'
+        #     'Name' = 'Ubuntu 20.04'
         #     'URI' = 'https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64-wsl.rootfs.tar.gz'
         #     'AppxName' = '' # Leave blank for wsl --import install
         #     'winpe' = ''
@@ -168,7 +168,6 @@ function Select-Distro () {
 
 function Install-Distro ($distro) {
     function WSL-Import ($distro) {
-        # Sideloading may need to be enabled (Need to verify)
         $distroinstall = "$env:LOCALAPPDATA\lxss"
         $wslname = $($distro.Name).Replace(" ", "-")
         $Filename = $wslname + ".rootfs.tar.gz"
