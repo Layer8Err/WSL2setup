@@ -51,6 +51,12 @@ function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
     $distrolist = (
         [PSCustomObject]@{
+            'Name' = 'Ubuntu 20.04'
+            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1591927648&P2=402&P3=2&P4=JZJPCmzbk5oMnClzjPMkM3%2fS0pE5aaEuBN9S%2fVrLfSOnr4mEN%2bRxL%2fvICC06hiYFDbtaAtqUZ8Ib1PZ%2b6JvkLg%3d%3dc'
+            'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
+            'winpe' = 'ubuntu2004.exe'
+            'installed' = $false
+        }, [PSCustomObject]@{
             'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
@@ -120,7 +126,7 @@ function Install-Distro ($distro) {
     if ((Get-AppxPackage).Name -Contains $distro.AppxName) {
         Write-Host(" ...Found an existing " + $distro.Name + " install")
     } else {
-        $Filename = "$(Split-Path $distro.URI -Leaf).appx"
+        $Filename = "$($distro.AppxName).appx"
         $ProgressPreference = 'SilentlyContinue'
         Write-Host(" ...Downloading " + $distro.Name + ".")
         Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
