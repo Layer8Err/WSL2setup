@@ -36,8 +36,8 @@ function Update-Kernel () {
     Remove-Item -Path $kernelUpdate
 }
 
-# Check for Kernel Update Package
 function Kernel-Updated () {
+    # Check for Kernel Update Package
     Write-Host("Checking for Windows Subsystem for Linux Update...")
     $uninstall64 = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, Publisher, DisplayVersion, InstallDate
     if ($uninstall64.DisplayName -contains 'Windows Subsystem for Linux Update') {
@@ -46,9 +46,37 @@ function Kernel-Updated () {
         return $false
     }
 }
+
+$pkgs = (Get-AppxPackage).Name
+
+function Get-WSLlist {
+    $wslinstalls = New-Object Collections.Generic.List[String]
+    $(wsl -l) | ForEach-Object { if ($_.Length -gt 1){ $wslinstalls.Add($_) } }
+    $wslinstalls = $wslinstalls | Where-Object { $_ -ne 'Windows Subsystem for Linux Distributions:' }
+    return $wslinstalls
+}
+function Check-Existance ($distro) {
+    # Check for the existence of a distro
+    # return Installed as Bool
+    $wslImport = $false
+    if (($distro.AppxName).Length -eq 0){ $wslImport = $true }
+    $installed = $false
+    if ( $wslImport -eq $false ){
+        if ($pkgs -contains $distro.AppxName) {
+            $installed = $true
+        }
+    } else {
+        if (Get-WSLlist -contains ($distro.Name).Replace("-", " ")){
+            $installed = $true
+        }
+    }
+    return $installed
+}
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
+    # You can also use fiddler to get URIs...
+    # ToDo: Add Alpine: https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395
     $distrolist = (
         [PSCustomObject]@{
             'Name' = 'Ubuntu 20.04'
@@ -56,50 +84,66 @@ function Select-Distro () {
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu18.04onWindows'
             'winpe' = 'ubuntu1804.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'Ubuntu 16.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1604'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu16.04onWindows'
             'winpe' = 'ubuntu1604.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'Debian'
             'URI' = 'https://aka.ms/wsl-debian-gnulinux'
             'AppxName' = 'TheDebianProject.DebianGNULinux'
             'winpe' = 'debian.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'Kali'
             'URI' = 'https://aka.ms/wsl-kali-linux-new'
             'AppxName' = 'KaliLinux'
             'winpe' = 'kali.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'OpenSUSE Leap 42'
             'URI' = 'https://aka.ms/wsl-opensuse-42'
             'AppxName' = 'openSUSELeap42'
             'winpe' = 'openSUSE-42.exe'
             'installed' = $false
-        }, [PSCustomObject]@{
+        },
+        [PSCustomObject]@{
             'Name' = 'SUSE Linux Enterprise Server 12'
             'URI' = 'https://aka.ms/wsl-sles-12'
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
             'installed' = $false
         }
+        # [PSCustomObject]@{
+        #     'Name' = 'Fedora Remix for WSL'
+        #     'URI' = 'https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/31.5.0/Fedora-Remix-for-WSL_31.5.0.0_x64_arm64.appxbundle'
+        #     'AppxName' = 'FedoraRemix'
+        #     'winpe' = 'fedora.exe'
+        #     'installed' = $false
+        #     'sideloadreqd' = $true # Sideloading not supported by this script... yet
+        # },
+        # [PSCustomObject]@{
+        #     'Name' = 'Ubuntu 20.04 - wsl import'
+        #     'URI' = 'https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64-wsl.rootfs.tar.gz'
+        #     'AppxName' = '' # Leave blank for wsl --import install
+        #     'winpe' = ''
+        #     'installed' = $false
+        # }
     )
-    $pkgs = (Get-AppxPackage).Name
-    $distrolist | ForEach-Object {
-        if ($pkgs -contains $_.AppxName) {
-            $_.installed = $true
-        }
-    }
+    $distrolist | ForEach-Object { $_.installed = Check-Existance($_) }
     Write-Host("+------------------------------------------------+")
     Write-Host("| Choose your Distro                             |")
     Write-Host("| Ubuntu 18.04 is recommended for Docker on WSL2 |")
@@ -123,9 +167,17 @@ function Select-Distro () {
 }
 
 function Install-Distro ($distro) {
-    if ((Get-AppxPackage).Name -Contains $distro.AppxName) {
-        Write-Host(" ...Found an existing " + $distro.Name + " install")
-    } else {
+    function WSL-Import ($distro) {
+        # Sideloading may need to be enabled (Need to verify)
+        $distroinstall = "$env:LOCALAPPDATA\lxss"
+        $wslname = $($distro.Name).Replace(" ", "-")
+        $Filename = $wslname + ".rootfs.tar.gz"
+        Write-Host(" ...Downloading " + $distro.Name + ".")
+        Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
+        wsl.exe --import $wslname $distroinstall $Filename
+    }
+    function WSL-AppxAdd ($distro) {
+        # ToDo: Check if sideloading is required
         $Filename = "$($distro.AppxName).appx"
         $ProgressPreference = 'SilentlyContinue'
         Write-Host(" ...Downloading " + $distro.Name + ".")
@@ -133,6 +185,15 @@ function Install-Distro ($distro) {
         Write-Host(" ...Beginning " + $distro.Name + " install.")
         Add-AppxPackage -Path $Filename
         Start-Sleep -Seconds 5
+    }
+    if (Check-Existance($distro)) {
+        Write-Host(" ...Found an existing " + $distro.Name + " install")
+    } else {
+        if ($($distro.AppxName).Length -gt 1){
+            WSL-AppxAdd($distro)
+        } else {
+            WSL-Import($distro)
+        }
     }
 }
 
@@ -155,5 +216,20 @@ if ($rebootRequired) {
     wsl --set-default-version 2
     $distro = Select-Distro
     Install-Distro($distro)
-    Start-Process $distro.winpe
+    if ($distro.AppxName.Length -gt 1) {
+        Start-Process $distro.winpe
+    } else {
+        $wslselect = ""
+        Get-WSLlist | ForEach-Object {
+            if ($_ -match $distro.Name){
+                $wslselect = $_
+            }
+        }
+        if ($wslselect -ne "") {
+            wsl -d $wslselect
+        } else {
+            Write-Host("Run 'wsl -l' to list WSL Distributions")
+            Write-Host("Run 'wsl -d <distroname>' to start WSL Distro")
+        }
+    }
 }
