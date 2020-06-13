@@ -76,8 +76,30 @@ function Get-WSLExistance ($distro) {
 function Get-StoreDownloadLink ($distro) {
     # Use $distro.StoreLink to get $distro.URI
     # Required when URI is not hard-coded
+    # TODO: test function and verify working
     #$lnklookupsite = 'https://store.rg-adguard.net/'
     $lookupAPI = 'https://store.rg-adguard.net/api/GetFiles'
+    $formdata = @{
+        'type' = 'url'
+        'url' = $distro.StoreLink
+        'ring' = 'RP'
+        'lang' = 'en-US'
+    }
+    $headers = @{
+        'Accept' = '*/*'
+        'Accept-Encoding' = 'gzip, deflate, br'
+        'Accept-Language' = 'en-US,en;q=0.9'
+        'Content-Type' = 'application/x-www-form-urlencoded'
+        'Host' = 'store.rd-adguard.net'
+        'Origin' = 'https://store.rg-adguard.net'
+        'Referer' = 'https://store.rg-adguard.net/'
+        'Sec-Fetch-Dest' = 'empty'
+        'Sec-Fetch-Mode' = 'cors'
+        'Sec-Fetch-Site' = 'same-origin'
+    }
+    $agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
+    $client = New-Object System.Net.WebClient
+    $links = Invoke-RestMethod -Method Post -Uri $lookupAPI -UserAgent $agent -Header $headers -Body (ConvertTo-Json $formdata)
     # POST form to $lookupAPI
     # GET response
     # Parse response for .AppxPackage URLs
@@ -89,14 +111,14 @@ function Select-Distro () {
     # You can also use fiddler to get URIs...
     # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
-        [PSCustomObject]@{
-            'Name' = 'Ubuntu 20.04'
-            'StoreLink' = 'https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71'
-            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1592091626&P2=402&P3=2&P4=FGk6RNiwMAw9uFeeShUMFzWW0Fy0dO0cr7z7EUTj9sHRXJo9oZ3iSUVK1%2f2eslwEoxVE7ogzsg0R02lYnKnh4A%3d%3d'
-            'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
-            'winpe' = 'ubuntu2004.exe'
-            'installed' = $false
-        },
+        # [PSCustomObject]@{ # TODO: Use Get-StoreDownloadLink since URI is dynamic
+        #     'Name' = 'Ubuntu 20.04'
+        #     'StoreLink' = 'https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71'
+        #     'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1592091626&P2=402&P3=2&P4=FGk6RNiwMAw9uFeeShUMFzWW0Fy0dO0cr7z7EUTj9sHRXJo9oZ3iSUVK1%2f2eslwEoxVE7ogzsg0R02lYnKnh4A%3d%3d'
+        #     'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
+        #     'winpe' = 'ubuntu2004.exe'
+        #     'installed' = $false
+        # },
         [PSCustomObject]@{
             'Name' = 'Ubuntu 18.04'
             'URI' = 'https://aka.ms/wsl-ubuntu-1804'
@@ -139,14 +161,14 @@ function Select-Distro () {
             'winpe' = 'SLES-12.exe'
             'installed' = $false
         },
-        [PSCustomObject]@{
-            'Name' = 'Alpine'
-            'StoreLink' = 'https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395'
-            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592074307&P2=402&P3=2&P4=Ny0mF2PUzcu%2bH3syAewQ9YOPz1h0Wslqx75z41rVVH%2funfYWpFW7ffxDDm4T1zOiijQSRE12ciQLWepEciXWUQ%3d%3d'
-            'AppxName' = 'AlpineWSL'
-            'winpe' = 'Alpine.exe'
-            'installed' = $false
-        }
+        # [PSCustomObject]@{ # TODO: Use Get-StoreDownloadLink since URI is dynamic
+        #     'Name' = 'Alpine'
+        #     'StoreLink' = 'https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395'
+        #     'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592074307&P2=402&P3=2&P4=Ny0mF2PUzcu%2bH3syAewQ9YOPz1h0Wslqx75z41rVVH%2funfYWpFW7ffxDDm4T1zOiijQSRE12ciQLWepEciXWUQ%3d%3d'
+        #     'AppxName' = 'AlpineWSL'
+        #     'winpe' = 'Alpine.exe'
+        #     'installed' = $false
+        # }
         # [PSCustomObject]@{
         #     'Name' = 'Fedora Remix for WSL'
         #     'URI' = 'https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/31.5.0/Fedora-Remix-for-WSL_31.5.0.0_x64_arm64.appxbundle'
