@@ -72,6 +72,17 @@ function Get-WSLExistance ($distro) {
     }
     return $installed
 }
+
+function Get-StoreDownloadLink ($distro) {
+    # Use $distro.StoreLink to get $distro.URI
+    # Required when URI is not hard-coded
+    #$lnklookupsite = 'https://store.rg-adguard.net/'
+    $lookupAPI = 'https://store.rg-adguard.net/api/GetFiles'
+    # POST form to $lookupAPI
+    # GET response
+    # Parse response for .AppxPackage URLs
+    return $distro
+}
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
@@ -80,6 +91,7 @@ function Select-Distro () {
     $distrolist = (
         [PSCustomObject]@{
             'Name' = 'Ubuntu 20.04'
+            'StoreLink' = 'https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71'
             'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1592091626&P2=402&P3=2&P4=FGk6RNiwMAw9uFeeShUMFzWW0Fy0dO0cr7z7EUTj9sHRXJo9oZ3iSUVK1%2f2eslwEoxVE7ogzsg0R02lYnKnh4A%3d%3d'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
@@ -129,6 +141,7 @@ function Select-Distro () {
         },
         [PSCustomObject]@{
             'Name' = 'Alpine'
+            'StoreLink' = 'https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395'
             'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592074307&P2=402&P3=2&P4=Ny0mF2PUzcu%2bH3syAewQ9YOPz1h0Wslqx75z41rVVH%2funfYWpFW7ffxDDm4T1zOiijQSRE12ciQLWepEciXWUQ%3d%3d'
             'AppxName' = 'AlpineWSL'
             'winpe' = 'Alpine.exe'
