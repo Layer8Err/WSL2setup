@@ -126,6 +126,13 @@ function Select-Distro () {
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
             'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'Alpine'
+            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592027407&P2=402&P3=2&P4=hUfUkFdpiaBEcWkhRAyTASBXeTpx6pxqkhHg0naZb7XNY4MgO%2fFnRjMIKoIRyug%2b2ro9MileDKP%2fWMqYZg0nww%3d%3d'
+            'AppxName' = 'AlpineWSL'
+            'winpe' = 'wsl.exe'
+            'installed' = $false
         }
         # [PSCustomObject]@{
         #     'Name' = 'Fedora Remix for WSL'
