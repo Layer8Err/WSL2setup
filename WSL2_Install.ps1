@@ -74,10 +74,9 @@ function Get-WSLExistance ($distro) {
 }
 
 function Get-StoreDownloadLink ($distro) {
-    # Use $distro.StoreLink to get $distro.URI
+    # Uses $distro.StoreLink to get $distro.URI
     # Required when URI is not hard-coded
-    # TODO: test function and verify working
-    #### Other Items ####
+    #### Thanks to MattiasC85 for this excelent method of getting Microsoft Store download URIs ####
     # Source: https://github.com/MattiasC85/Scripts/blob/a1163b97875ed075927438505808622614a9961f/OSD/Download-AppxFromStore.ps1
     $wchttp=[System.Net.WebClient]::new()
     $URI = "https://store.rg-adguard.net/api/GetFiles"
@@ -86,7 +85,7 @@ function Get-StoreDownloadLink ($distro) {
     $HtmlResult = $wchttp.UploadString($URI, $myParameters)
     $Start=$HtmlResult.IndexOf("<p>The links were successfully received from the Microsoft Store server.</p>")
     if ($Start -eq -1) {
-        write-host "Could not get the links, please check the StoreURL."
+        write-host "Could not get Microsoft Store download URI, please check the StoreURL."
         exit
     }
     $TableEnd=($HtmlResult.LastIndexOf("</table>")+8)
@@ -107,7 +106,6 @@ function Get-StoreDownloadLink ($distro) {
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    # You can also use fiddler to get URIs...
     # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
         [PSCustomObject]@{
