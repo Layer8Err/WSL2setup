@@ -80,7 +80,7 @@ function Select-Distro () {
     $distrolist = (
         [PSCustomObject]@{
             'Name' = 'Ubuntu 20.04'
-            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1591927648&P2=402&P3=2&P4=JZJPCmzbk5oMnClzjPMkM3%2fS0pE5aaEuBN9S%2fVrLfSOnr4mEN%2bRxL%2fvICC06hiYFDbtaAtqUZ8Ib1PZ%2b6JvkLg%3d%3dc'
+            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1592091626&P2=402&P3=2&P4=FGk6RNiwMAw9uFeeShUMFzWW0Fy0dO0cr7z7EUTj9sHRXJo9oZ3iSUVK1%2f2eslwEoxVE7ogzsg0R02lYnKnh4A%3d%3d'
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
             'installed' = $false
