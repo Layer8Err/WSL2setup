@@ -76,7 +76,7 @@ function Get-WSLExistance ($distro) {
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
     # You can also use fiddler to get URIs...
-    # ToDo: Add Alpine: https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395
+    # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
         [PSCustomObject]@{
             'Name' = 'Ubuntu 20.04'
@@ -129,9 +129,9 @@ function Select-Distro () {
         },
         [PSCustomObject]@{
             'Name' = 'Alpine'
-            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592027407&P2=402&P3=2&P4=hUfUkFdpiaBEcWkhRAyTASBXeTpx6pxqkhHg0naZb7XNY4MgO%2fFnRjMIKoIRyug%2b2ro9MileDKP%2fWMqYZg0nww%3d%3d'
+            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ed13e35c-e186-4e8f-b0ec-53aadc89ba0d?P1=1592074307&P2=402&P3=2&P4=Ny0mF2PUzcu%2bH3syAewQ9YOPz1h0Wslqx75z41rVVH%2funfYWpFW7ffxDDm4T1zOiijQSRE12ciQLWepEciXWUQ%3d%3d'
             'AppxName' = 'AlpineWSL'
-            'winpe' = 'wsl.exe'
+            'winpe' = 'Alpine.exe'
             'installed' = $false
         }
         # [PSCustomObject]@{
