@@ -72,15 +72,46 @@ function Get-WSLExistance ($distro) {
     }
     return $installed
 }
+
+function Get-StoreDownloadLink ($distro) {
+    # Uses $distro.StoreLink to get $distro.URI
+    # Required when URI is not hard-coded
+    #### Thanks to MattiasC85 for this excelent method of getting Microsoft Store download URIs ####
+    # Source: https://github.com/MattiasC85/Scripts/blob/a1163b97875ed075927438505808622614a9961f/OSD/Download-AppxFromStore.ps1
+    $wchttp=[System.Net.WebClient]::new()
+    $URI = "https://store.rg-adguard.net/api/GetFiles"
+    $myParameters = "type=url&url=$($distro.StoreLink)"
+    $wchttp.Headers[[System.Net.HttpRequestHeader]::ContentType]="application/x-www-form-urlencoded"
+    $HtmlResult = $wchttp.UploadString($URI, $myParameters)
+    $Start=$HtmlResult.IndexOf("<p>The links were successfully received from the Microsoft Store server.</p>")
+    if ($Start -eq -1) {
+        write-host "Could not get Microsoft Store download URI, please check the StoreURL."
+        exit
+    }
+    $TableEnd=($HtmlResult.LastIndexOf("</table>")+8)
+    $SemiCleaned=$HtmlResult.Substring($start,$TableEnd-$start)
+    $newHtml=New-Object -ComObject "HTMLFile"
+    $src = [System.Text.Encoding]::Unicode.GetBytes($SemiCleaned)
+    $newHtml.write($src)
+    $ToDownload=$newHtml.getElementsByTagName("a") | Select-Object textContent, href
+    $apxLinks = @()
+    $ToDownload | Foreach-Object {
+        if ($_.textContent -match '.appxbundle') {
+            $apxLinks = $_
+        }
+    }
+    $distro.URI = $apxLinks.href
+    return $distro
+}
  
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    # You can also use fiddler to get URIs...
-    # ToDo: Add Alpine: https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395
+    # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
     $distrolist = (
         [PSCustomObject]@{
             'Name' = 'Ubuntu 20.04'
-            'URI' = 'http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/ab88b198-af0e-4ecf-8d35-db6427cc3848?P1=1591927648&P2=402&P3=2&P4=JZJPCmzbk5oMnClzjPMkM3%2fS0pE5aaEuBN9S%2fVrLfSOnr4mEN%2bRxL%2fvICC06hiYFDbtaAtqUZ8Ib1PZ%2b6JvkLg%3d%3dc'
+            'StoreLink' = 'https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71'
+            'URI' = ''
             'AppxName' = 'CanonicalGroupLimited.Ubuntu20.04onWindows'
             'winpe' = 'ubuntu2004.exe'
             'installed' = $false
@@ -125,6 +156,14 @@ function Select-Distro () {
             'URI' = 'https://aka.ms/wsl-sles-12'
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
+            'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'Alpine'
+            'StoreLink' = 'https://www.microsoft.com/en-us/p/alpine-wsl/9p804crf0395'
+            'URI' = ''
+            'AppxName' = 'AlpineWSL'
+            'winpe' = 'Alpine.exe'
             'installed' = $false
         }
         # [PSCustomObject]@{
@@ -180,6 +219,9 @@ function Install-Distro ($distro) {
         $Filename = "$($distro.AppxName).appx"
         $ProgressPreference = 'SilentlyContinue'
         Write-Host(" ...Downloading " + $distro.Name + ".")
+        if ($distro.URI.Length -lt 2) {
+            $distro = Get-StoreDownloadLink($distro) # Handle dynamic URIs
+        }
         Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
         Write-Host(" ...Beginning " + $distro.Name + " install.")
         Add-AppxPackage -Path $Filename
