@@ -104,49 +104,52 @@ function Get-StoreDownloadLink ($distro) {
     return $distro
 }
 
-function Enable-Sideload () {
-    # Allow sideloading of unsigned appx packages
+function Check-Sideload (){
+    # Return $true if sideloading is enabled
     $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock"
     $Key = Get-Item -LiteralPath $keyPath
     $sideloadKeys = @("AllowAllTrustedApps", "AllowDevelopmentWithoutDevLicense")
-    New-ItemProperty -Path $keyPath -Name "AllowAllTrustedApps" -Value "1" -PropertyType DWORD -Force | Out-Null
-    New-ItemProperty -Path $keyPath -Name "AllowDevelopmentWithoutDevLicense" -Value "1" -PropertyType DWORD -Force | Out-Null
+    $return = $true
     function Test-RegProperty ($propertyname){
-        $testProp = $Key.GetValue($propertyname, $null)
-        if ($testProp -ne $null){
+        if (($Key.GetValue($propertyname, $null)) -ne $null){
             return $true
         } else {
             return $false
         }
     }
-    $enableNeeded = $false
+    $sideloadKeys | ForEach-Object {
+        if (!(Test-RegProperty ($_))){
+            $return = $false
+        } else {
+            if (( (Get-ItemProperty -Path $keyPath -Name $_).$_ ) -ne 1 ){
+                $return = $false
+            }
+        }
+    }
+    return $return
+}
+function Enable-Sideload () {
+    # Allow sideloading of unsigned appx packages
+    $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock"
+    if (!(Test-Path -Path $keyPath)){
+        New-Item -Path $keyPath # In case the entire registry key was accidentally deleted
+    }
+    $Key = Get-Item -LiteralPath $keyPath
+    $sideloadKeys = @("AllowAllTrustedApps", "AllowDevelopmentWithoutDevLicense")
+    function Test-RegProperty ($propertyname){
+        if (($Key.GetValue($propertyname, $null)) -ne $null){
+            return $true
+        } else {
+            return $false
+        }
+    }
     $sideloadKeys | ForEach-Object {
         if (!(Test-RegProperty $_)){
-            $enableNeeded = $true
+            New-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
         } else {
-            if (((Get-ItemProperty -Path $keyPath -Name $_).$_) -ne 1){
-                $enableNeeded = $true
-            }
+            Set-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
         }
     }
-    if ($enableNeeded){
-        $allowEnable = Read-Host ("Really enable sideloading? [Y/n]")
-        $allowEnable.ToLower()
-        if ($allowEnable.Length -gt 1){ $allowEnable = $allowEnable.Substring(0,1) }
-        if ($allowEnable -eq 'n'){
-            Write-Host ("Sideloading has not been enabled")
-            return $false
-        } else {
-            $sideloadKeys | ForEach-Object {
-                if (!(Test-RegProperty $_)){
-                    New-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
-                } else {
-                    Set-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
-                }
-            }
-        }
-    }
-    return $true
 }
 
 function Select-Distro () {
@@ -266,12 +269,16 @@ function Install-Distro ($distro) {
         }
     }
     function Add-WSLAppx ($distro) {
-        # ToDo: Check if sideloading is required
         $Filename = "$env:temp\" + "$($distro.AppxName).appx"
         $abortInstall = $false
-        if ($distro.sideloadreqd -eq $true){
-            $sideloadEnabled = Enable-Sideload
-            if ($sideloadEnabled -eq $false){
+        if (($distro.sideloadreqd -eq $true) -and (!(Check-Sideload))){
+            Write-Host ("Sideloading must be turned on in order to install $($distro.Name)")
+            $allowEnable = (Read-Host ("Really enable sideloading? [Y/n]")).ToLower()
+            if ($allowEnable.Length -gt 1){ $allowEnable = $allowEnable.Substring(0,1) }
+            if (!($allowEnable -eq 'n')){
+                Write-Host ("Enabling sideloading...")
+                Enable-Sideload | Out-Null
+            } else {
                 $abortInstall = $true
             }
         }
@@ -324,7 +331,13 @@ if ($rebootRequired) {
     $distro = Select-Distro
     Install-Distro($distro)
     if ($distro.AppxName.Length -gt 1) {
-        Start-Process $distro.winpe
+        if ($distro.sideloadreqd){
+            if (Check-Sideload){
+                Start-Process $distro.winpe
+            }
+        } else {
+            Start-Process $distro.winpe
+        }
     } else {
         $wslselect = ""
         Get-WSLlist | ForEach-Object {
