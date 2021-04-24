@@ -192,10 +192,17 @@ function Select-Distro () {
             'installed' = $false
         },
         [PSCustomObject]@{
-            'Name' = 'OpenSUSE Leap 42'
+            'Name' = 'openSUSE Leap 42'
             'URI' = 'https://aka.ms/wsl-opensuse-42'
             'AppxName' = 'openSUSELeap42'
             'winpe' = 'openSUSE-42.exe'
+            'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'openSUSE Leap 15.2'
+            'URI' = 'https://aka.ms/wsl-opensuseleap15-2'
+            'AppxName' = 'openSUSELeap15'
+            'winpe' = 'openSUSE-Leap-15.2.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
@@ -203,6 +210,13 @@ function Select-Distro () {
             'URI' = 'https://aka.ms/wsl-sles-12'
             'AppxName' = 'SUSELinuxEnterpriseServer12'
             'winpe' = 'SLES-12.exe'
+            'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'SUSE Linux Enterprise Server 15'
+            'URI' = 'https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP2'
+            'AppxName' = 'SUSELinuxEnterpriseServer15SP2'
+            'winpe' = 'SUSE-Linux-Enterprise-Server-15-SP2.exe'
             'installed' = $false
         },
         [PSCustomObject]@{
@@ -241,7 +255,7 @@ function Select-Distro () {
         }
         Write-Host(($i + 1).ToString() + " " + ($distrolist.Name)[$i] + " " + $installedTxt)
     }
-    $distroChoice = Read-Host '>'
+    [Int]$distroChoice = Read-Host '>'
     $choiceNum = 0
     if (($distroChoice.Length -ne 0) -and ($distroChoice -match '^\d+$')) {
         if (($distroChoice -gt 0) -and ($distroChoice -le $distrolist.Length)) {
