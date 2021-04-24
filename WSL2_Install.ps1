@@ -103,7 +103,52 @@ function Get-StoreDownloadLink ($distro) {
     $distro.URI = $apxLinks.href
     return $distro
 }
- 
+
+function Enable-Sideload () {
+    # Allow sideloading of unsigned appx packages
+    $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock"
+    $Key = Get-Item -LiteralPath $keyPath
+    $sideloadKeys = @("AllowAllTrustedApps", "AllowDevelopmentWithoutDevLicense")
+    New-ItemProperty -Path $keyPath -Name "AllowAllTrustedApps" -Value "1" -PropertyType DWORD -Force | Out-Null
+    New-ItemProperty -Path $keyPath -Name "AllowDevelopmentWithoutDevLicense" -Value "1" -PropertyType DWORD -Force | Out-Null
+    function Test-RegProperty ($propertyname){
+        $testProp = $Key.GetValue($propertyname, $null)
+        if ($testProp -ne $null){
+            return $true
+        } else {
+            return $false
+        }
+    }
+    $enableNeeded = $false
+    $sideloadKeys | ForEach-Object {
+        if (!(Test-RegProperty $_)){
+            $enableNeeded = $true
+        } else {
+            if (((Get-ItemProperty -Path $keyPath -Name $_).$_) -ne 1){
+                $enableNeeded = $true
+            }
+        }
+    }
+    if ($enableNeeded){
+        $allowEnable = Read-Host ("Really enable sideloading? [Y/n]")
+        $allowEnable.ToLower()
+        if ($allowEnable.Length -gt 1){ $allowEnable = $allowEnable.Substring(0,1) }
+        if ($allowEnable -eq 'n'){
+            Write-Host ("Sideloading has not been enabled")
+            return $false
+        } else {
+            $sideloadKeys | ForEach-Object {
+                if (!(Test-RegProperty $_)){
+                    New-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
+                } else {
+                    Set-ItemProperty -Path $keyPath -Name $_ -Value "1" -PropertyType DWORD -Force | Out-Null
+                }
+            }
+        }
+    }
+    return $true
+}
+
 function Select-Distro () {
     # See: https://docs.microsoft.com/en-us/windows/wsl/install-manual
     # You can also use https://store.rg-adguard.net to get Appx links from Windows Store links
@@ -165,15 +210,15 @@ function Select-Distro () {
             'AppxName' = 'AlpineWSL'
             'winpe' = 'Alpine.exe'
             'installed' = $false
+        },
+        [PSCustomObject]@{
+            'Name' = 'Fedora Remix for WSL'
+            'URI' = 'https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/31.5.0/Fedora-Remix-for-WSL_31.5.0.0_x64_arm64.appxbundle'
+            'AppxName' = 'FedoraRemix'
+            'winpe' = 'fedoraremix.exe'
+            'installed' = $false
+            'sideloadreqd' = $true
         }
-        # [PSCustomObject]@{
-        #     'Name' = 'Fedora Remix for WSL'
-        #     'URI' = 'https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/31.5.0/Fedora-Remix-for-WSL_31.5.0.0_x64_arm64.appxbundle'
-        #     'AppxName' = 'FedoraRemix'
-        #     'winpe' = 'fedora.exe'
-        #     'installed' = $false
-        #     'sideloadreqd' = $true # Sideloading not supported by this script... yet
-        # },
         # [PSCustomObject]@{
         #     'Name' = 'Ubuntu 20.04'
         #     'URI' = 'https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64-wsl.rootfs.tar.gz'
@@ -209,23 +254,44 @@ function Install-Distro ($distro) {
     function Import-WSL ($distro) {
         $distroinstall = "$env:LOCALAPPDATA\lxss"
         $wslname = $($distro.Name).Replace(" ", "-")
-        $Filename = $wslname + ".rootfs.tar.gz"
+        $Filename = "$env:temp\" + $wslname + ".rootfs.tar.gz"
         Write-Host(" ...Downloading " + $distro.Name + ".")
-        Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
-        wsl.exe --import $wslname $distroinstall $Filename
+        $client = New-Object net.WebClient
+        $client.DownloadFile($distro.URI, $Filename)
+        if (Test-Path $Filename){
+            Write-Host(" ...Importing " + $distro.Name + ".")
+            wsl.exe --import $wslname $distroinstall $Filename
+        } else {
+            Write-Host("ERROR: Cannot install $($distro.Name) missing rootfs.tar.gz package. (Download failed)") -ForegroundColor Red
+        }
     }
     function Add-WSLAppx ($distro) {
         # ToDo: Check if sideloading is required
-        $Filename = "$($distro.AppxName).appx"
-        $ProgressPreference = 'SilentlyContinue'
-        Write-Host(" ...Downloading " + $distro.Name + ".")
-        if ($distro.URI.Length -lt 2) {
-            $distro = Get-StoreDownloadLink($distro) # Handle dynamic URIs
+        $Filename = "$env:temp\" + "$($distro.AppxName).appx"
+        $abortInstall = $false
+        if ($distro.sideloadreqd -eq $true){
+            $sideloadEnabled = Enable-Sideload
+            if ($sideloadEnabled -eq $false){
+                $abortInstall = $true
+            }
         }
-        Invoke-WebRequest -Uri $distro.URI -OutFile $Filename -UseBasicParsing
-        Write-Host(" ...Beginning " + $distro.Name + " install.")
-        Add-AppxPackage -Path $Filename
-        Start-Sleep -Seconds 5
+        if ($abortInstall -eq $false) {
+            Write-Host(" ...Downloading " + $distro.Name + ".")
+            if ($distro.URI.Length -lt 2) {
+                $distro = Get-StoreDownloadLink($distro) # Handle dynamic URIs
+            }
+            $client = New-Object net.WebClient
+            $client.DownloadFile($distro.URI, $Filename)
+            if (Test-Path $Filename) {
+                Write-Host(" ...Beginning " + $distro.Name + " install.")
+                Add-AppxPackage -Path $Filename
+            } else {
+                Write-Host("ERROR: Cannot install $($distro.Name) missing Appx package. (Download failed)") -ForegroundColor Red
+            }
+            Start-Sleep -Seconds 5
+        } else {
+            Write-Host("WARNING: Unable to install. Sideloading required, but not enabled.") -ForegroundColor Yellow
+        }
     }
     if (Get-WSLExistance($distro)) {
         Write-Host(" ...Found an existing " + $distro.Name + " install")
